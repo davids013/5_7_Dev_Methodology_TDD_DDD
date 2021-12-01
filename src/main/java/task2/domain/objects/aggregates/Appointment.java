@@ -7,6 +7,8 @@ import task2.domain.objects.value_objects.Medicine;
 import task2.domain.objects.value_objects.Service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
@@ -45,6 +47,22 @@ public class Appointment implements Callable {
         return Objects.hash("Appointment", id);
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Appointment{");
+        final DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT);
+        sb.append("dateTime=").append(dateTime.format(formatter));
+        sb.append(", id=").append(id);
+        sb.append(", doctor=").append(doctor.getName());
+        sb.append(", pet=").append(pet.getName());
+        sb.append(", service=").append(service.getName());
+        sb.append(", medicine=").append((medicine != null) ? medicine.getTitle() : "no");
+        sb.append(", price=").append(price);
+        sb.append(", disease=").append(disease.toString());
+        sb.append('}');
+        return sb.toString();
+    }
+
     public LocalDateTime getDateTime() {
         return dateTime;
     }
@@ -79,13 +97,12 @@ public class Appointment implements Callable {
 
     @Override
     public Appointment call() {
-//    public void run() {
         System.out.printf("Врач '%s' оказывает услугу '%s' питомцу '%s' клиента '%s'%n",
                 doctor.getName(), service.getName(), pet.getName(), pet.getClient().getName());
 
 
         try {
-            Thread.sleep(BASIC_TIME);
+            Thread.sleep(BASIC_TIME + (int) (Math.random() * BASIC_TIME / 5));
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

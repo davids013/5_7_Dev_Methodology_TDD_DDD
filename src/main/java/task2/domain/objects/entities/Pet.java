@@ -1,10 +1,13 @@
 package task2.domain.objects.entities;
 
+import task2.domain.objects.aggregates.Appointment;
 import task2.domain.objects.value_objects.Species;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Pet {
     private final long id;
@@ -12,7 +15,7 @@ public class Pet {
     private final LocalDate birthDate;
     private final Species species;
     private final Client client;
-    private final MedicalHistory history;
+    private final List<Appointment> history;
 
     public Pet(long id, String name, LocalDate birthDate, Species species, Client client) {
         this.id = id;
@@ -20,7 +23,7 @@ public class Pet {
         this.birthDate = birthDate;
         this.species = species;
         this.client = client;
-        history = new MedicalHistory(id, this);
+        history = new CopyOnWriteArrayList<>();
     }
 
     @Override
@@ -56,11 +59,11 @@ public class Pet {
         return client;
     }
 
-    public MedicalHistory getMedicalHistory() {
-        return new MedicalHistory(history.getId(), history.getPet());
+    public List<Appointment> getMedicalHistory() {
+        return new ArrayList<>(history);
     }
 
-    public void addDisease(LocalDateTime dateTime, Disease disease) {
-        history.addDisease(dateTime, disease);
+    public void addToHistory(Appointment appointment) {
+        history.add(appointment);
     }
 }

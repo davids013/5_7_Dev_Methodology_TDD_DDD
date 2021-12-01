@@ -1,10 +1,16 @@
 import task1.CreditCalc;
+import task2.domain.services.VetClinicStarter;
 
 public class Main {
     public static void main(String[] args) {
         System.out.println("\n\tМодуль 5. Многопоточное и функциональное программирование\n" +
-                "\tДомашнее задание к лекции 7.Методология разработки. TDD. DDD\n");
+                "\tДомашнее задание к лекции 7. Методология разработки. TDD. DDD\n");
 
+        getTask1Example();
+        VetClinicStarter.main(null);
+    }
+
+    private static void getTask1Example() {
         System.out.println("\tЗадача 1. Разработка через тестирование (Test Driven Development)");
         final double loanAmount = 750_000d;
         final float rate = 16.7f;

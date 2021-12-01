@@ -7,19 +7,28 @@ import task2.domain.objects.entities.Pet;
 import task2.domain.objects.value_objects.Medicine;
 import task2.domain.objects.value_objects.Service;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class VetClinic implements Runnable {
+    private final String HISTORY_DIR = "src" + File.separator + "main" + File.separator + "java" + File.separator +
+            "task2" + File.separator + "resources" + File.separator;
     private final String name;
-    private Map<String, Doctor> doctors = new HashMap<>();
-    private Map<String, Service> services = new HashMap<>();
-    private Map<String, Pet> pets = new HashMap<>();
-    private Map<String, Client> clients = new HashMap<>();
-    private Map<Medicine, Integer> medicines = new HashMap<>();
-    private List<Appointment> appointments = new CopyOnWriteArrayList<>();
-    private Queue<Pet> petQueue = new LinkedBlockingQueue<>();
+    private final Map<String, Doctor> doctors = new HashMap<>();
+    private final Map<String, Service> services = new HashMap<>();
+    private final Map<String, Pet> pets = new HashMap<>();
+    private final Map<String, Client> clients = new HashMap<>();
+    private final Map<Medicine, Integer> medicines = new HashMap<>();
+    private final List<Appointment> appointments = new CopyOnWriteArrayList<>();
+    private final Queue<Pet> petQueue = new LinkedBlockingQueue<>();
     private boolean isWorks = true;
+    private final AtomicInteger appointmentCounter = new AtomicInteger(0);
 
     public VetClinic(String name) {
         this.name = name;
@@ -80,10 +89,6 @@ public class VetClinic implements Runnable {
         System.out.println("Питомец '" + pet.getName() + "' ожидает приёма");
     }
 
-    public void addAppointment(Appointment appointment) {
-        appointments.add(appointment);
-    }
-
     @Override
     public void run() {
         if (doctors.size() == 0) {
@@ -114,32 +119,58 @@ public class VetClinic implements Runnable {
                                 position = rnd.nextInt(Disease.values().length);
                                 disease = Disease.values()[position];
                                 appointment = new Appointment(
-                                        appointments.size(), doctor, pet, service, medicine, disease);
+                                        appointmentCounter.incrementAndGet(), doctor, pet, service, medicine, disease);
                                 final Future<Appointment> future = pool.submit(appointment);
                                 futures.add(future);
-                                System.out.println("Приём " + futures.size() + " оформлен");
+                                System.out.println("Приём " + appointmentCounter.get() + " оформлен");
                                 break;
                             }
                         }
                         Thread.sleep(10);
                     }
-                };
+                }
+                pool.shutdown();
+                while (!pool.isTerminated()) Thread.sleep(10);
                 futures.forEach((f) -> {
                     try {
                         final Appointment appointment = f.get();
                         appointments.add(appointment);
-//                        if (appointment.getDisease() != Disease.HEALTHY) {
-                            appointment.getPet().addDisease(appointment.getDateTime(), appointment.getDisease());
-//                        }
+                        appointment.getPet().addToHistory(appointment);
+                        new Thread(() -> {
+                            saveMedHistory(appointment.getPet().getName() + ".txt", appointment);
+                        }).start();
                     } catch (InterruptedException | ExecutionException e) {
                         e.printStackTrace();
                     }
                 });
-                pool.shutdown();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+        }
+    }
 
+    private boolean saveMedHistory(String fileName, Appointment appointment) {
+        final String LINE_SEPARATOR = "\r\n";
+        final File file = new File(HISTORY_DIR + fileName);
+        if (!file.exists()) {
+            final String parent = file.getParent();
+            try {
+                if (!(new File(parent).exists())) {
+                    Files.createDirectories(Paths.get(file.getParent()));
+                }
+                Files.createFile(Paths.get(file.getAbsolutePath()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        try (final FileWriter writer = new FileWriter(file, true)) {
+            final String info = appointment.toString();
+            writer.write(info + LINE_SEPARATOR);
+            writer.flush();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 }
